@@ -1,6 +1,6 @@
 import sys
 from config_parser import parse_config
-from maze_generator import MazeGenerator
+from mazegen import MazeGenerator
 
 def main():
     try:
@@ -8,7 +8,7 @@ def main():
         config = parse_config("config.txt")
         
         print("Generating maze...")
-        maze = MazeGenerator(config)
+        maze = MazeGenerator.from_config(config)
         maze.generate()
         
         print(f"Saving maze and solution to {config['OUTPUT_FILE']}...")
