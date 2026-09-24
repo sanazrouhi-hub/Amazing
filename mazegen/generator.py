@@ -28,11 +28,16 @@ class MazeGenerator:
         gen.save_to_file()         # optional: write it to OUTPUT_FILE
     """
 
-    def __init__(self, width: int, height: int,
-                 entry: Tuple[int, int], exit: Tuple[int, int],
-                 perfect: bool = False,
-                 output_file: str = "maze_output.txt",
-                 seed: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        entry: Tuple[int, int],
+        exit: Tuple[int, int],
+        perfect: bool = False,
+        output_file: str = "maze_output.txt",
+        seed: Optional[int] = None,
+    ) -> None:
         self.width = width
         self.height = height
         self.entry = entry
@@ -44,8 +49,13 @@ class MazeGenerator:
         if self.seed is not None:
             random.seed(self.seed)
 
-        self.grid = [[{"N": True, "E": True, "S": True, "W": True, "visited": False}
-                      for _ in range(self.width)] for _ in range(self.height)]
+        self.grid = [
+            [
+                {"N": True, "E": True, "S": True, "W": True, "visited": False}
+                for _ in range(self.width)
+            ]
+            for _ in range(self.height)
+        ]
         self.solution: Optional[str] = None
 
         self._apply_42_pattern()
@@ -74,13 +84,33 @@ class MazeGenerator:
         return self.solution
 
     def _apply_42_pattern(self) -> None:
-        if self.width < 10 or self.height < 8:
+        # The "42" is drawn by fully-closed cells (1 = a closed wall cell).
+        bitmap = [
+            "1010111",
+            "1010001",
+            "1110111",
+            "0010100",
+            "0010111",
+        ]
+        ph = len(bitmap)
+        pw = len(bitmap[0])
+        if self.width < pw + 2 or self.height < ph + 2:
             print("Warning: Maze size is too small to fit the '42' pattern.")
             return
 
-        start_x = (self.width - 6) // 2
-        start_y = (self.height - 5) // 2
-        pass
+        start_x = (self.width - pw) // 2
+        start_y = (self.height - ph) // 2
+        for row in range(ph):
+            for col in range(pw):
+                if bitmap[row][col] == "1":
+                    cell = self.grid[start_y + row][start_x + col]
+                    cell["N"] = True
+                    cell["E"] = True
+                    cell["S"] = True
+                    cell["W"] = True
+                    # mark visited so generate() carves *around* it,
+                    # leaving these cells fully closed to form the "42"
+                    cell["visited"] = True
 
     def generate(self) -> None:
         stack = []
@@ -106,10 +136,10 @@ class MazeGenerator:
     def _get_Unvisited_neighbors(self, x: int, y: int) -> List[Tuple[int, int, str]]:
         neighbors = []
         directions = [
-            (0, -1, 'N', 'S'),
-            (1, 0, 'E', 'W'),
-            (0, 1, 'S', 'N'),
-            (-1, 0, 'W', 'E')
+            (0, -1, "N", "S"),
+            (1, 0, "E", "W"),
+            (0, 1, "S", "N"),
+            (-1, 0, "W", "E"),
         ]
 
         for dx, dy, diri, _ in directions:
@@ -121,16 +151,16 @@ class MazeGenerator:
         return neighbors
 
     def _remove_walls(self, x1: int, y1: int, x2: int, y2: int, direction: str) -> None:
-        if direction == 'N':
+        if direction == "N":
             self.grid[y1][x1]["N"] = False
             self.grid[y2][x2]["S"] = False
-        elif direction == 'S':
+        elif direction == "S":
             self.grid[y1][x1]["S"] = False
             self.grid[y2][x2]["N"] = False
-        elif direction == 'E':
+        elif direction == "E":
             self.grid[y1][x1]["E"] = False
             self.grid[y2][x2]["W"] = False
-        elif direction == 'W':
+        elif direction == "W":
             self.grid[y1][x1]["W"] = False
             self.grid[y2][x2]["E"] = False
 
@@ -139,7 +169,7 @@ class MazeGenerator:
             for x in range(self.width):
                 if random.random() < 0.1:
                     if x + 1 < self.width and self.grid[y][x]["E"]:
-                        self._remove_walls(x, y, x + 1, y, 'E')
+                        self._remove_walls(x, y, x + 1, y, "E")
 
     def solve_shortest_path(self) -> str:
         queue = deque([(self.entry[0], self.entry[1], "")])
@@ -152,30 +182,36 @@ class MazeGenerator:
                 return path
 
             directions = [
-                (0, -1, 'N', "N"),
-                (1, 0, 'E', "E"),
-                (0, 1, 'S', "S"),
-                (-1, 0, 'W', "W")
+                (0, -1, "N", "N"),
+                (1, 0, "E", "E"),
+                (0, 1, "S", "S"),
+                (-1, 0, "W", "W"),
             ]
 
             for dx, dy, diri, char in directions:
                 if not self.grid[y][x][diri]:
                     nx, ny = x + dx, y + dy
-                    if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in visited:
+                    if (
+                        0 <= nx < self.width
+                        and 0 <= ny < self.height
+                        and (nx, ny) not in visited
+                    ):
                         visited.add((nx, ny))
                         queue.append((nx, ny, path + char))
 
         return ""
 
     def save_to_file(self) -> None:
-        with open(self.output_file, 'w', encoding='utf-8') as f:
+        with open(self.output_file, "w", encoding="utf-8") as f:
             for y in range(self.height):
                 row_hex = []
                 for x in range(self.width):
                     cell = self.grid[y][x]
-                    val = (1 if cell["N"] else 0) << 0 | \
-                          (1 if cell["E"] else 0) << 1 | \
-                          (1 if cell["S"] else 0) << 2 | \
-                          (1 if cell["W"] else 0) << 3
-                    row_hex.append(format(val, 'X'))
+                    val = (
+                        (1 if cell["N"] else 0) << 0
+                        | (1 if cell["E"] else 0) << 1
+                        | (1 if cell["S"] else 0) << 2
+                        | (1 if cell["W"] else 0) << 3
+                    )
+                    row_hex.append(format(val, "X"))
                 f.write("".join(row_hex) + "\n")
