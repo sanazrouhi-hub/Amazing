@@ -57,12 +57,16 @@ class MazeGenerator:
             for _ in range(self.height)
         ]
         self.solution: Optional[str] = None
+        self._pattern: set = set()
 
         self._apply_42_pattern()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "MazeGenerator":
-        """Build a MazeGenerator from a parsed config dict (see config_parser)."""
+        """Build a MazeGenerator from a parsed config dict.
+
+        See config_parser for the dict shape.
+        """
         return cls(
             width=config["WIDTH"],
             height=config["HEIGHT"],
@@ -78,7 +82,7 @@ class MazeGenerator:
         return self.grid
 
     def get_solution(self) -> str:
-        """Return the shortest-path solution, computing it once and caching it."""
+        """Return the shortest-path solution (computed once, then cached)."""
         if self.solution is None:
             self.solution = self.solve_shortest_path()
         return self.solution
@@ -111,6 +115,7 @@ class MazeGenerator:
                     # mark visited so generate() carves *around* it,
                     # leaving these cells fully closed to form the "42"
                     cell["visited"] = True
+                    self._pattern.add((start_x + col, start_y + row))
 
     def generate(self) -> None:
         stack = []
@@ -164,12 +169,132 @@ class MazeGenerator:
             self.grid[y1][x1]["W"] = False
             self.grid[y2][x2]["E"] = False
 
+    _DIRS = [(0, -1, "N"), (1, 0, "E"), (0, 1, "S"), (-1, 0, "W")]
+
+    def _neighbours(self, x: int, y: int) -> List[Tuple[int, int, str]]:
+        out = []
+        for dx, dy, d in self._DIRS:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < self.width and 0 <= ny < self.height:
+                out.append((nx, ny, d))
+        return out
+
+    def _open_sides(self, x: int, y: int) -> List[str]:
+        return [d for d in ("N", "E", "S", "W") if not self.grid[y][x][d]]
+
+    def _add_walls(self, x1: int, y1: int, x2: int, y2: int, direction: str) -> None:
+        if direction == "N":
+            self.grid[y1][x1]["N"] = True
+            self.grid[y2][x2]["S"] = True
+        elif direction == "S":
+            self.grid[y1][x1]["S"] = True
+            self.grid[y2][x2]["N"] = True
+        elif direction == "E":
+            self.grid[y1][x1]["E"] = True
+            self.grid[y2][x2]["W"] = True
+        elif direction == "W":
+            self.grid[y1][x1]["W"] = True
+            self.grid[y2][x2]["E"] = True
+
+    def _block_open(self, bx: int, by: int) -> bool:
+        for j in range(by, by + 3):
+            for i in range(bx, bx + 3):
+                if (i, j) in self._pattern:
+                    return False
+        for j in range(by, by + 3):
+            for i in range(bx, bx + 3):
+                c = self.grid[j][i]
+                if i < bx + 2 and c["E"]:
+                    return False
+                if j < by + 2 and c["S"]:
+                    return False
+        return True
+
+    def _creates_3x3_near(self, x: int, y: int) -> bool:
+        for by in range(max(0, y - 2), min(self.height - 3, y) + 1):
+            for bx in range(max(0, x - 2), min(self.width - 3, x) + 1):
+                if self._block_open(bx, by):
+                    return True
+        return False
+
+    def _reachable(self) -> set:
+        start = self.entry
+        if start in self._pattern:
+            return set()
+        seen = {start}
+        queue = deque([start])
+        while queue:
+            x, y = queue.popleft()
+            for nx, ny, d in self._neighbours(x, y):
+                if (nx, ny) in self._pattern:
+                    continue
+                if not self.grid[y][x][d] and (nx, ny) not in seen:
+                    seen.add((nx, ny))
+                    queue.append((nx, ny))
+        return seen
+
+    def _braid(self) -> None:
+        # Remove dead-ends (cells with <=1 opening) by opening another wall,
+        # which turns the single-path maze into a looped, playable board.
+        cells = [
+            (x, y)
+            for y in range(self.height)
+            for x in range(self.width)
+            if (x, y) not in self._pattern
+        ]
+        random.shuffle(cells)
+        for x, y in cells:
+            if len(self._open_sides(x, y)) > 1:
+                continue
+            cands = [
+                (nx, ny, d)
+                for nx, ny, d in self._neighbours(x, y)
+                if (nx, ny) not in self._pattern and self.grid[y][x][d]
+            ]
+            random.shuffle(cands)
+            for nx, ny, d in cands:
+                self._remove_walls(x, y, nx, ny, d)
+                if self._creates_3x3_near(x, y):
+                    self._add_walls(x, y, nx, ny, d)
+                else:
+                    break
+
+    def _connect_all(self) -> None:
+        # Make sure every non-"42" cell is reachable from the entry.
+        for _ in range(self.width * self.height):
+            reach = self._reachable()
+            target = None
+            for y in range(self.height):
+                for x in range(self.width):
+                    if (x, y) not in self._pattern and (x, y) not in reach:
+                        target = (x, y)
+                        break
+                if target:
+                    break
+            if target is None:
+                return
+            x, y = target
+            prefer = [
+                (nx, ny, d)
+                for nx, ny, d in self._neighbours(x, y)
+                if (nx, ny) not in self._pattern
+                and (nx, ny) in reach
+                and self.grid[y][x][d]
+            ]
+            other = [
+                (nx, ny, d)
+                for nx, ny, d in self._neighbours(x, y)
+                if (nx, ny) not in self._pattern and self.grid[y][x][d]
+            ]
+            pick = prefer or other
+            if not pick:
+                return
+            nx, ny, d = random.choice(pick)
+            self._remove_walls(x, y, nx, ny, d)
+
     def _create_loops(self) -> None:
-        for y in range(self.height):
-            for x in range(self.width):
-                if random.random() < 0.1:
-                    if x + 1 < self.width and self.grid[y][x]["E"]:
-                        self._remove_walls(x, y, x + 1, y, "E")
+        self._braid()
+        self._connect_all()
 
     def solve_shortest_path(self) -> str:
         queue = deque([(self.entry[0], self.entry[1], "")])
