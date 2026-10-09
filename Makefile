@@ -1,13 +1,17 @@
 PYTHON = python3
+CONFIG = config.txt
 
 install:
 	$(PYTHON) -m pip install -e .
 
 run:
-	$(PYTHON) main.py
+	$(PYTHON) a_maze_ing.py $(CONFIG)
+
+gui:
+	$(PYTHON) gui.py $(CONFIG)
 
 debug:
-	$(PYTHON) -m pdb main.py
+	$(PYTHON) -m pdb a_maze_ing.py $(CONFIG)
 
 clean:
 	rm -rf __pycache__ .mypy_cache *.pyc *.whl dist build *.egg-info
@@ -20,4 +24,4 @@ lint-strict:
 	flake8 .
 	mypy . --strict
 
-.PHONY: install run debug clean lint lint-strict
+.PHONY: install run gui debug clean lint lint-strict
