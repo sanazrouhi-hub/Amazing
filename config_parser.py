@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 
 def parse_config(file_path: str) -> Dict[str, Any]:
-    config = {}
+    config: Dict[str, Any] = {}
     mandatory_keys = {
         "WIDTH",
         "HEIGHT",

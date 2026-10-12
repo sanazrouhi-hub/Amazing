@@ -1,7 +1,7 @@
 from mazegen import MazeGenerator
 
 
-def test_grid_dimensions():
+def test_grid_dimensions() -> None:
     gen = MazeGenerator(
         width=10, height=8, entry=(0, 0), exit=(9, 7), perfect=True, seed=42
     )
@@ -12,7 +12,7 @@ def test_grid_dimensions():
     assert len(grid[0]) == 10  # 10 columns in the first row
 
 
-def test_same_seed_same_maze():
+def test_same_seed_same_maze() -> None:
     gen1 = MazeGenerator(
         width=10, height=8, entry=(0, 0), exit=(9, 7), perfect=True, seed=42
     )
@@ -26,7 +26,7 @@ def test_same_seed_same_maze():
     assert gen1.get_solution() == gen2.get_solution()
 
 
-def test_wall_coherence():
+def test_wall_coherence() -> None:
     gen = MazeGenerator(
         width=10, height=8, entry=(0, 0), exit=(9, 7), perfect=True, seed=42
     )
@@ -42,7 +42,7 @@ def test_wall_coherence():
                 assert not grid[y + 1][x]["N"]  # neighbour below open north
 
 
-def test_perfect_maze_has_no_loops():
+def test_perfect_maze_has_no_loops() -> None:
     gen = MazeGenerator(
         width=10, height=8, entry=(0, 0), exit=(9, 7), perfect=True, seed=42
     )

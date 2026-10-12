@@ -57,7 +57,7 @@ class MazeGenerator:
             for _ in range(self.height)
         ]
         self.solution: Optional[str] = None
-        self._pattern: set = set()
+        self._pattern: set[Tuple[int, int]] = set()
 
         self._apply_42_pattern()
 
@@ -138,7 +138,9 @@ class MazeGenerator:
         if not self.perfect:
             self._create_loops()
 
-    def _get_Unvisited_neighbors(self, x: int, y: int) -> List[Tuple[int, int, str]]:
+    def _get_Unvisited_neighbors(
+            self, x: int, y: int
+            ) -> List[Tuple[int, int, str]]:
         neighbors = []
         directions = [
             (0, -1, "N", "S"),
@@ -155,7 +157,9 @@ class MazeGenerator:
 
         return neighbors
 
-    def _remove_walls(self, x1: int, y1: int, x2: int, y2: int, direction: str) -> None:
+    def _remove_walls(
+            self, x1: int, y1: int, x2: int, y2: int, direction: str
+            ) -> None:
         if direction == "N":
             self.grid[y1][x1]["N"] = False
             self.grid[y2][x2]["S"] = False
@@ -182,7 +186,9 @@ class MazeGenerator:
     def _open_sides(self, x: int, y: int) -> List[str]:
         return [d for d in ("N", "E", "S", "W") if not self.grid[y][x][d]]
 
-    def _add_walls(self, x1: int, y1: int, x2: int, y2: int, direction: str) -> None:
+    def _add_walls(
+            self, x1: int, y1: int, x2: int, y2: int, direction: str
+            ) -> None:
         if direction == "N":
             self.grid[y1][x1]["N"] = True
             self.grid[y2][x2]["S"] = True
@@ -217,7 +223,7 @@ class MazeGenerator:
                     return True
         return False
 
-    def _reachable(self) -> set:
+    def _reachable(self) -> set[Tuple[int, int]]:
         start = self.entry
         if start in self._pattern:
             return set()

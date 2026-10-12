@@ -8,13 +8,12 @@ the graphical viewer.
 """
 
 import sys
-
 from config_parser import parse_config
 from mazegen import MazeGenerator
 import gui
 
 
-def write_output(gen, path):
+def write_output(gen: MazeGenerator, path: str) -> None:
     """Write the maze in the subject's format:
     the hex grid, a blank line, then entry, exit and the shortest path."""
     grid = gen.get_grid()
@@ -39,7 +38,7 @@ def write_output(gen, path):
         f.write("\n".join(lines) + "\n")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python3 a_maze_ing.py config.txt", file=sys.stderr)
         sys.exit(1)

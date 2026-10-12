@@ -69,7 +69,9 @@ def _fully(c: Dict[str, Any]) -> bool:
     return bool(c["N"] and c["E"] and c["S"] and c["W"])
 
 
-def render(gen: MazeGenerator, show_path: bool = True, wall_fg: str = "30") -> str:
+def render(
+        gen: MazeGenerator, show_path: bool = True, wall_fg: str = "30"
+        ) -> str:
     grid = gen.get_grid()
     h, w = gen.height, gen.width
     rows, cols = 2 * h + 1, 2 * w + 1
@@ -178,7 +180,9 @@ def render(gen: MazeGenerator, show_path: bool = True, wall_fg: str = "30") -> s
     return "\n".join(out)
 
 
-def build_maze(config: Dict[str, Any], randomize: bool = False) -> MazeGenerator:
+def build_maze(
+        config: Dict[str, Any], randomize: bool = False
+        ) -> MazeGenerator:
     cfg = dict(config)
     if randomize:
         cfg["SEED"] = None
@@ -187,7 +191,9 @@ def build_maze(config: Dict[str, Any], randomize: bool = False) -> MazeGenerator
     return gen
 
 
-def run(config: Dict[str, Any], initial: Optional[MazeGenerator] = None) -> None:
+def run(
+        config: Dict[str, Any], initial: Optional[MazeGenerator] = None
+        ) -> None:
     gen = initial if initial is not None else build_maze(config)
     show_path = True
     wall_i = 0
