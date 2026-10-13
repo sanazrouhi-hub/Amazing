@@ -10,7 +10,7 @@ the graphical viewer.
 import sys
 from config_parser import parse_config
 from mazegen import MazeGenerator
-import gui
+import tui
 
 
 def write_output(gen: MazeGenerator, path: str) -> None:
@@ -48,7 +48,7 @@ def main() -> None:
         gen.generate()
         write_output(gen, config["OUTPUT_FILE"])
         print(f"Maze saved to {config['OUTPUT_FILE']}")
-        gui.run(config, initial=gen)
+        tui.run(config, initial=gen)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
